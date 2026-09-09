@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
+import { AssistantPanel } from "@/components/ai/assistant-panel";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
@@ -36,6 +37,7 @@ export function AppShell({ children, user }: AppShellProps) {
           </div>
         </main>
       </div>
+      <AssistantPanel />
     </div>
   );
 }
