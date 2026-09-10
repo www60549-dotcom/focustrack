@@ -18,7 +18,7 @@ export function AppShell({ children, user }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-[hsl(220_20%_97%)] dark:bg-background">
       <Sidebar
         user={user}
         collapsed={collapsed}
