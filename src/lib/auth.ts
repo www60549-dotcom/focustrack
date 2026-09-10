@@ -56,7 +56,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     });
   } catch (error) {
     console.error(
-      "ensureDbUser failed — database unreachable or misconfigured:",
+      "ensureDbUser failed:",
       error instanceof Error ? error.message : error
     );
     const err = new Error(
@@ -83,6 +83,7 @@ export function isDatabaseUnavailableError(error: unknown): boolean {
     (error.message.startsWith("DATABASE_UNAVAILABLE") ||
       error.message.includes("Can't reach database server") ||
       error.message.includes("P1001") ||
+      error.message.includes("P1000") ||
       error.message.includes("P1017") ||
       error.message.includes("P2021") ||
       error.message.includes("does not exist"))
