@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Timer, Play } from "lucide-react";
+import { Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDuration } from "@/lib/utils";
 
@@ -14,33 +14,38 @@ export function FocusWidget({
 }: FocusWidgetProps) {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Timer className="h-4 w-4 text-primary" aria-hidden="true" />
-          Focus
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="flex items-center gap-2">
+          <Timer className="h-4 w-4 text-primary" />
+          Focus Today
         </CardTitle>
+        <Link
+          href="/focus"
+          className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+        >
+          Open timer
+        </Link>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-end gap-6">
-          <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-md bg-muted/60 px-3 py-2.5">
+            <p className="text-[11px] text-muted-foreground">Total time</p>
+            <p className="text-lg font-semibold tabular-nums tracking-tight">
               {formatDuration(focusMinutesToday)}
             </p>
-            <p className="text-xs text-muted-foreground">today</p>
           </div>
-          <div>
-            <p className="text-2xl font-bold tabular-nums tracking-tight">
+          <div className="rounded-md bg-muted/60 px-3 py-2.5">
+            <p className="text-[11px] text-muted-foreground">Sessions</p>
+            <p className="text-lg font-semibold tabular-nums tracking-tight">
               {sessionsToday}
             </p>
-            <p className="text-xs text-muted-foreground">sessions</p>
           </div>
         </div>
         <Link
           href="/focus"
-          className="inline-flex h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex h-9 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
         >
-          <Play className="h-4 w-4" />
-          Start Focus Session
+          Start Focus
         </Link>
       </CardContent>
     </Card>
