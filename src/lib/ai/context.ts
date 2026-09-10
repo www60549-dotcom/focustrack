@@ -59,8 +59,7 @@ export async function buildUserContext(userId: string): Promise<string> {
       }),
     ]);
 
-    const lines: string[] = [];
-    lines.push("## User productivity snapshot (today)");
+    const lines: string[] = ["## User productivity snapshot (today)"];
     lines.push("\n### Today's tasks");
     if (tasksToday.length === 0) lines.push("- None scheduled");
     else
