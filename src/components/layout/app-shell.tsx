@@ -26,11 +26,11 @@ export function AppShell({ children, user }: AppShellProps) {
         <AppHeader />
         <main
           className={cn(
-            "flex-1 overflow-y-auto scrollbar-thin",
+            "flex-1 overflow-y-auto scrollbar-thin bg-[hsl(var(--background))]",
             "pb-16 md:pb-0"
           )}
         >
-          <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-5 lg:px-6 py-4 sm:py-5">
+          <div className="mx-auto w-full max-w-[1240px] px-4 sm:px-5 lg:px-6 py-4 sm:py-5">
             {children}
           </div>
         </main>
