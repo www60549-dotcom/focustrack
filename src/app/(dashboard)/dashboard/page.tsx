@@ -4,7 +4,9 @@ import {
   Target,
   Timer,
   TrendingUp,
+  Play,
 } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import {
@@ -12,11 +14,11 @@ import {
   calculateProductivityScore,
   formatDuration,
 } from "@/lib/utils";
-import { StatCard } from "@/components/dashboard/stat-card";
 import { TodayTasks } from "@/components/dashboard/today-tasks";
 import { TodayHabits } from "@/components/dashboard/today-habits";
-import { FocusWidget } from "@/components/dashboard/focus-widget";
-import { QuickActions } from "@/components/dashboard/quick-actions";
+import { GoalsProgress } from "@/components/dashboard/goals-progress";
+import { ActivityList } from "@/components/dashboard/activity-list";
+import { ProgressRing } from "@/components/motion/progress-ring";
 
 export const metadata = {
   title: "Dashboard",
@@ -60,9 +62,16 @@ export default async function DashboardPage() {
     color?: string;
   }[] = [];
 
+  const goals: {
+    id: string;
+    name: string;
+    progress: number;
+    status: string;
+    deadline: string | null;
+  }[] = [];
+
   if (user?.id) {
     try {
-      // Ensure user row exists
       await prisma.user.upsert({
         where: { id: user.id },
         create: {
@@ -82,23 +91,16 @@ export default async function DashboardPage() {
         prisma.task.findMany({
           where: {
             userId: user.id,
-            status: { notIn: ["CANCELLED"] },
             OR: [
-              { dueDate: { gte: todayStart, lte: todayEnd } },
-              {
-                dueDate: null,
-                status: { not: "COMPLETED" },
-              },
+              { status: { notIn: ["COMPLETED", "CANCELLED"] } },
               {
                 status: "COMPLETED",
                 completedAt: { gte: todayStart, lte: todayEnd },
               },
             ],
           },
-          include: {
-            category: { select: { name: true } },
-          },
-          orderBy: [{ priority: "asc" }, { order: "asc" }],
+          include: { category: true },
+          orderBy: [{ status: "asc" }, { priority: "desc" }, { dueDate: "asc" }],
           take: 20,
         }),
         prisma.task.count({
@@ -128,7 +130,6 @@ export default async function DashboardPage() {
 
       tasksTotal = allActive.length;
       tasksCompleted = allActive.filter((t) => t.status === "COMPLETED").length;
-      // Prefer count of completed today if list is mixed
       if (completedToday > tasksCompleted) tasksCompleted = completedToday;
       overdueTasks = overdue;
       focusMinutesToday = focusAgg._sum.actualDuration || 0;
@@ -145,14 +146,11 @@ export default async function DashboardPage() {
         });
       }
 
-      // Habits for today
       const habits = await prisma.habit.findMany({
         where: { userId: user.id, isActive: true },
         include: {
           completions: {
-            where: {
-              date: todayStart,
-            },
+            where: { date: todayStart },
             take: 1,
           },
         },
@@ -171,12 +169,30 @@ export default async function DashboardPage() {
           color: h.color,
         });
       }
+
+      const activeGoals = await prisma.goal.findMany({
+        where: {
+          userId: user.id,
+          status: { notIn: ["COMPLETED"] },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 4,
+      });
+      for (const g of activeGoals) {
+        goals.push({
+          id: g.id,
+          name: g.name,
+          progress: g.progress,
+          status: g.status,
+          deadline: g.deadline?.toISOString() ?? null,
+        });
+      }
     } catch (e) {
       console.error("Dashboard data load failed (DB may be unavailable):", e);
     }
   }
 
-  const { score, breakdown } = calculateProductivityScore({
+  const { score } = calculateProductivityScore({
     tasksCompleted,
     tasksTotal,
     habitsCompleted,
@@ -185,90 +201,191 @@ export default async function DashboardPage() {
     overdueTasks,
   });
 
-  const taskPct =
-    tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 0;
-  const habitPct =
-    habitsTotal > 0 ? Math.round((habitsCompleted / habitsTotal) * 100) : 0;
-
   const greeting = getGreeting();
-  const todayLabel = format(new Date(), "EEEE, MMMM d, yyyy");
-
-  const motivational =
-    score >= 80
-      ? "Outstanding focus today — keep the momentum going."
-      : score >= 50
-        ? "Solid progress. A few more wins will push you further."
-        : tasksTotal === 0 && habitsTotal === 0
-          ? "Start your day by adding a task or completing a habit."
-          : "Every small step counts. You’ve got this.";
+  const todayLabel = format(new Date(), "EEEE, MMMM d");
+  const nextTask = todayTasks.find((t) => !t.completed);
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          {greeting}, {name} 👋
-        </h1>
-        <p className="text-sm text-muted-foreground">{todayLabel}</p>
-        <p className="text-sm text-muted-foreground max-w-xl">{motivational}</p>
-      </header>
+    <div className="space-y-5">
+      <section className="hero-panel relative overflow-hidden rounded-xl text-white animate-in fade-in slide-in-from-top-1">
+        <div className="relative z-10 p-5 sm:p-6 lg:p-7">
+          <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+            <div className="lg:col-span-3 space-y-5">
+              <div className="space-y-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-white/70">
+                  {todayLabel}
+                </p>
+                <h1 className="text-2xl sm:text-[1.85rem] font-semibold tracking-tight leading-tight">
+                  Dashboard
+                </h1>
+                <p className="text-sm text-white/80">
+                  {greeting}, {name}. Stay focused. Get things done.
+                </p>
+              </div>
 
-      <section
-        aria-label="Productivity overview"
-        className="grid gap-3 sm:gap-4 grid-cols-2 xl:grid-cols-4"
-      >
-        <StatCard
-          title="Today's Tasks"
-          value={tasksTotal === 0 ? "—" : `${tasksCompleted}/${tasksTotal}`}
-          subtitle={
-            tasksTotal === 0 ? "No tasks scheduled" : `${taskPct}% complete`
-          }
-          icon={CheckSquare}
-        />
-        <StatCard
-          title="Habits"
-          value={
-            habitsTotal === 0 ? "—" : `${habitsCompleted}/${habitsTotal}`
-          }
-          subtitle={
-            habitsTotal === 0
-              ? "No habits yet"
-              : currentStreak > 0
-                ? `${currentStreak}-day streak`
-                : `${habitPct}% complete`
-          }
-          icon={Target}
-        />
-        <StatCard
-          title="Focus Time"
-          value={formatDuration(focusMinutesToday)}
-          subtitle={
-            sessionsToday === 0
-              ? "No sessions yet"
-              : `${sessionsToday} session${sessionsToday === 1 ? "" : "s"}`
-          }
-          icon={Timer}
-        />
-        <StatCard
-          title="Productivity Score"
-          value={score}
-          subtitle={`Tasks ${breakdown.tasks >= 0 ? "+" : ""}${breakdown.tasks} · Habits ${breakdown.habits >= 0 ? "+" : ""}${breakdown.habits} · Focus ${breakdown.focus >= 0 ? "+" : ""}${breakdown.focus}`}
-          icon={TrendingUp}
-        />
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                <HeroStat
+                  className="animate-in fade-in slide-in-from-bottom-2 stagger-1"
+                  icon={<CheckSquare className="h-3.5 w-3.5" />}
+                  label="TODAY'S TASKS"
+                  value={
+                    tasksTotal === 0 ? "—" : `${tasksCompleted} / ${tasksTotal}`
+                  }
+                  hint="Tasks completed"
+                />
+                <HeroStat
+                  className="animate-in fade-in slide-in-from-bottom-2 stagger-2"
+                  icon={<Target className="h-3.5 w-3.5" />}
+                  label="ACTIVE HABITS"
+                  value={
+                    habitsTotal === 0
+                      ? "—"
+                      : `${habitsCompleted} / ${habitsTotal}`
+                  }
+                  hint={
+                    currentStreak > 0
+                      ? `${currentStreak}d best streak`
+                      : "Completed today"
+                  }
+                />
+                <HeroStat
+                  className="animate-in fade-in slide-in-from-bottom-2 stagger-3"
+                  icon={<Timer className="h-3.5 w-3.5" />}
+                  label="FOCUS TIME"
+                  value={formatDuration(focusMinutesToday)}
+                  hint={
+                    sessionsToday > 0
+                      ? `${sessionsToday} session${sessionsToday === 1 ? "" : "s"}`
+                      : "Focused today"
+                  }
+                />
+                <HeroStat
+                  className="animate-in fade-in slide-in-from-bottom-2 stagger-4"
+                  icon={<TrendingUp className="h-3.5 w-3.5" />}
+                  label="PRODUCTIVITY"
+                  value={`${score}%`}
+                  hint="Today's score"
+                />
+              </div>
+            </div>
+
+            <div className="lg:col-span-2">
+              <div className="h-full rounded-xl bg-white text-foreground shadow-lg p-4 sm:p-5 flex flex-col animate-in fade-in zoom-in-95">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm font-semibold">Today&apos;s Focus</p>
+                  <Link
+                    href="/focus"
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    View all
+                  </Link>
+                </div>
+
+                <div className="flex-1 flex flex-col justify-center gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Timer className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate">
+                        {nextTask?.title || "Deep Work"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {sessionsToday > 0
+                          ? `${sessionsToday} session${sessionsToday === 1 ? "" : "s"} · ${formatDuration(focusMinutesToday)}`
+                          : "25 min · Ready"}
+                      </p>
+                      <span className="mt-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                        Ready
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/focus"
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+                  >
+                    <Play className="h-4 w-4" />
+                    Start Focus
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <QuickActions />
+      <div className="grid gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3 space-y-4">
+          <TodayTasks tasks={todayTasks} />
+          <TodayHabits habits={todayHabits} />
+        </div>
+        <div className="lg:col-span-2 space-y-4">
+          <div className="rounded-xl border border-border bg-card shadow-[var(--shadow-card)] p-4 flex items-center gap-4">
+            <ProgressRing
+              value={score}
+              size={100}
+              stroke={7}
+              label="Score"
+              sublabel={
+                score >= 80
+                  ? "Great day"
+                  : score >= 50
+                    ? "Solid progress"
+                    : "Keep going"
+              }
+            />
+            <div className="min-w-0 space-y-1">
+              <p className="text-sm font-semibold">Productivity score</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tasks {tasksCompleted}/{tasksTotal || 0} · Habits{" "}
+                {habitsCompleted}/{habitsTotal || 0} · Focus{" "}
+                {formatDuration(focusMinutesToday)}
+              </p>
+              {overdueTasks > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {overdueTasks} overdue reducing score
+                </p>
+              )}
+            </div>
+          </div>
+          <GoalsProgress goals={goals} />
+          <ActivityList
+            tasksCompleted={tasksCompleted}
+            habitsCompleted={habitsCompleted}
+            sessionsToday={sessionsToday}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      <section className="grid gap-4 lg:gap-6 lg:grid-cols-2">
-        <TodayTasks tasks={todayTasks} />
-        <TodayHabits habits={todayHabits} />
-      </section>
-
-      <section className="max-w-md">
-        <FocusWidget
-          focusMinutesToday={focusMinutesToday}
-          sessionsToday={sessionsToday}
-        />
-      </section>
+function HeroStat({
+  icon,
+  label,
+  value,
+  hint,
+  className,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-lg bg-white/12 ring-1 ring-white/15 px-3.5 py-3 backdrop-blur-[2px] hover:bg-white/16 transition-colors ${className || ""}`}
+    >
+      <div className="flex items-center gap-1.5 text-white/75 text-[10px] font-semibold tracking-wide">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <p className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight text-white">
+        {value}
+      </p>
+      <p className="mt-0.5 text-[11px] text-white/65">{hint}</p>
     </div>
   );
 }
