@@ -1,86 +1,40 @@
 import Link from "next/link";
-import {
-  Plus,
-  Timer,
-  Target,
-  Flag,
-  StickyNote,
-  type LucideIcon,
-} from "lucide-react";
+import { CheckSquare, Timer, Target, Flag, StickyNote } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
-interface QuickAction {
-  title: string;
-  href: string;
-  icon: LucideIcon;
-  description: string;
-}
-
-const actions: QuickAction[] = [
-  {
-    title: "New Task",
-    href: "/tasks?new=1",
-    icon: Plus,
-    description: "Add a task",
-  },
-  {
-    title: "Start Focus",
-    href: "/focus",
-    icon: Timer,
-    description: "Focus session",
-  },
-  {
-    title: "Add Habit",
-    href: "/habits?new=1",
-    icon: Target,
-    description: "Build a habit",
-  },
-  {
-    title: "New Goal",
-    href: "/goals?new=1",
-    icon: Flag,
-    description: "Set a goal",
-  },
-  {
-    title: "New Note",
-    href: "/notes?new=1",
-    icon: StickyNote,
-    description: "Quick note",
-  },
+const actions = [
+  { href: "/tasks?new=1", label: "New Task", hint: "N", icon: CheckSquare },
+  { href: "/focus", label: "Start Focus", hint: "F", icon: Timer },
+  { href: "/habits", label: "Add Habit", hint: "H", icon: Target },
+  { href: "/goals", label: "New Goal", hint: "G", icon: Flag },
+  { href: "/notes", label: "New Note", hint: "", icon: StickyNote },
 ];
 
 export function QuickActions() {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Quick Actions</CardTitle>
+      <CardHeader>
+        <CardTitle>Quick actions</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-          {actions.map((action) => {
-            const Icon = action.icon;
+          {actions.map((a) => {
+            const Icon = a.icon;
             return (
               <Link
-                key={action.href}
-                href={action.href}
-                className={cn(
-                  "flex flex-col items-center gap-2 rounded-xl border border-border bg-background p-3 sm:p-4",
-                  "text-center transition-colors hover:bg-accent hover:border-primary/30",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                )}
+                key={a.href + a.label}
+                href={a.href}
+                className="group flex flex-col items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-3 text-center transition-all hover:border-primary/40 hover:bg-accent hover:shadow-sm"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                  <Icon className="h-4.5 w-4.5 text-primary" aria-hidden="true" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary transition-transform group-hover:scale-105">
+                  <Icon className="h-4 w-4" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">
-                    {action.title}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground hidden sm:block truncate">
-                    {action.description}
-                  </p>
-                </div>
+                <span className="text-[12px] font-medium text-foreground">
+                  {a.label}
+                </span>
+                {a.hint && (
+                  <kbd className="text-[10px] text-muted-foreground">{a.hint}</kbd>
+                )}
               </Link>
             );
           })}
