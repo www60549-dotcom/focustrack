@@ -4,11 +4,14 @@ import { Sidebar } from "./sidebar";
 import { MobileNav } from "./mobile-nav";
 import { AppHeader } from "./app-header";
 import { AssistantPanel } from "@/components/ai/assistant-panel";
+import { CommandPalette } from "@/components/command/command-palette";
+import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
   children: React.ReactNode;
   user: {
+    id?: string | null;
     email?: string | null;
     name?: string | null;
   };
@@ -33,6 +36,8 @@ export function AppShell({ children, user }: AppShellProps) {
         </main>
       </div>
       <AssistantPanel />
+      <CommandPalette />
+      {user.id && <OnboardingGate userId={user.id} />}
     </div>
   );
 }
