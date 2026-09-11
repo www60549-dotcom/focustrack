@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Zap, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Zap, LogOut, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { mainNavItems, bottomNavItems } from "./nav-items";
-import { Button } from "@/components/ui/button";
+import { navSections, bottomNavItems, isNavActive } from "./nav-items";
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,11 +14,9 @@ interface SidebarProps {
     email?: string | null;
     name?: string | null;
   };
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
 }
 
-export function Sidebar({ user, collapsed = false, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -49,136 +46,120 @@ export function Sidebar({ user, collapsed = false, onToggleCollapse }: SidebarPr
 
   return (
     <aside
-      className={cn(
-        "hidden md:flex flex-col h-full border-r border-border bg-card transition-all duration-200",
-        collapsed ? "w-[72px]" : "w-60"
-      )}
+      className="hidden md:flex w-[232px] shrink-0 flex-col h-full border-r border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar))]"
       aria-label="Main navigation"
     >
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4 shrink-0">
+      <div className="flex h-14 items-center gap-2.5 px-4 shrink-0">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2.5 min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+          className="flex items-center gap-2.5 min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
-            <Zap className="h-4.5 w-4.5 text-primary-foreground" aria-hidden="true" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+            <Zap className="h-4 w-4" aria-hidden="true" />
           </div>
-          {!collapsed && (
-            <span className="font-semibold text-foreground truncate tracking-tight">
-              FocusTrack
-            </span>
-          )}
+          <span className="font-semibold text-[15px] text-foreground tracking-tight">
+            FocusTrack
+          </span>
         </Link>
-        {onToggleCollapse && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className={cn(
-              "ml-auto p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              collapsed && "mx-auto ml-0"
-            )}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
-        )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto scrollbar-thin py-3 px-2 space-y-0.5" aria-label="Primary">
-        {mainNavItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-              aria-current={isActive ? "page" : undefined}
-              title={collapsed ? item.title : undefined}
-            >
-              <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-              {!collapsed && <span className="truncate">{item.title}</span>}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-border p-2 space-y-0.5 shrink-0">
-        {bottomNavItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-              aria-current={isActive ? "page" : undefined}
-              title={collapsed ? item.title : undefined}
-            >
-              <Icon className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-              {!collapsed && <span className="truncate">{item.title}</span>}
-            </Link>
-          );
-        })}
-
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 mt-1",
-            collapsed && "justify-center"
-          )}
-        >
+      <div className="px-3 pb-3">
+        <div className="flex items-center gap-2.5 rounded-lg border border-border/70 bg-muted/40 px-2.5 py-2">
           <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-semibold"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground"
             aria-hidden="true"
           >
             {initials}
           </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground truncate">
-                {displayName}
-              </p>
-              {user.email && (
-                <p className="text-xs text-muted-foreground truncate">
-                  {user.email}
-                </p>
-              )}
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive",
-              collapsed && "mt-1"
-            )}
-            onClick={handleLogout}
-            disabled={loggingOut}
-            aria-label="Log out"
-            title="Log out"
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-medium text-foreground truncate leading-tight">
+              {displayName}
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate leading-tight">
+              Productivity
+            </p>
+          </div>
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground p-0.5 rounded"
+            aria-label="Account menu"
           >
-            <LogOut className="h-4 w-4" />
-          </Button>
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
         </div>
       </div>
+
+      <nav
+        className="flex-1 overflow-y-auto scrollbar-thin px-3 py-1 space-y-4"
+        aria-label="Primary"
+      >
+        {navSections.map((section) => (
+          <div key={section.label}>
+            <p className="px-2.5 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/75">
+              {section.label}
+            </p>
+            <ul className="space-y-0.5">
+              {section.items.map((item) => {
+                const active = isNavActive(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "nav-item",
+                        active ? "nav-item-active" : "nav-item-idle"
+                      )}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{item.title}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+
+        <div>
+          <p className="px-2.5 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/75">
+            Setting
+          </p>
+          <ul className="space-y-0.5">
+            {bottomNavItems.map((item) => {
+              const active = isNavActive(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "nav-item",
+                      active ? "nav-item-active" : "nav-item-idle"
+                    )}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{item.title}</span>
+                  </Link>
+                </li>
+              );
+            })}
+            <li>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="nav-item nav-item-idle w-full text-left"
+              >
+                <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">Logout</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </nav>
     </aside>
   );
 }
